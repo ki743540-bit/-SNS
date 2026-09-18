@@ -1,0 +1,560 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地下16色掲示板 (16-Color 2ch BBS)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root {
+  /* Classic 16-Color Dull VGA/PC-98 & 2ch Flat Palette */
+  --c-black: #000000;
+  --c-dark-blue: #000080;
+  --c-dark-green: #008000;
+  --c-dark-cyan: #008080;
+  --c-dark-red: #800000;
+  --c-dark-magenta: #800080;
+  --c-dark-yellow: #808000;
+  --c-light-gray: #c0c0c0;
+  --c-gray: #808080;
+  --c-blue: #0000ff;
+  --c-green: #00aa00;
+  --c-cyan: #00aaaa;
+  --c-red: #aa0000;
+  --c-magenta: #aa00aa;
+  --c-yellow: #aaaa00;
+  --c-white: #ffffff;
+  --c-bg: #efefef;
+  --c-text: #000000;
+  --c-border: #808080;
+  --c-box-bg: #ffffff;
+  --c-thread-head: #000080;
+}
+
+/* Theme: PC-98 16-Color Dull Flat */
+body[data-theme="pc98"] {
+  --c-bg: #d0d0d0;
+  --c-text: #000000;
+  --c-border: #000000;
+  --c-box-bg: #e4e4e4;
+  --c-thread-head: #000080;
+}
+
+/* Theme: 2ch Classic Beige/Green */
+body[data-theme="2ch-classic"] {
+  --c-bg: #efefef;
+  --c-text: #000000;
+  --c-border: #7f7f7f;
+  --c-box-bg: #ffffff;
+  --c-thread-head: #008000;
+}
+
+/* Theme: Monochrome Green CRT Bitmap */
+body[data-theme="mono-green"] {
+  --c-bg: #0d1a0d;
+  --c-text: #33ff33;
+  --c-border: #1a661a;
+  --c-box-bg: #050f05;
+  --c-thread-head: #66ff66;
+  --c-blue: #55ff55;
+  --c-dark-green: #22aa22;
+  --c-gray: #1a661a;
+  --c-light-gray: #228822;
+  --c-white: #aaffaa;
+}
+
+/* Theme: Monochrome Amber CRT Bitmap */
+body[data-theme="mono-amber"] {
+  --c-bg: #1a1205;
+  --c-text: #ffb000;
+  --c-border: #805500;
+  --c-box-bg: #0f0a00;
+  --c-thread-head: #ffcc44;
+  --c-blue: #ffaa00;
+  --c-dark-green: #cc8800;
+  --c-gray: #805500;
+  --c-light-gray: #aa7700;
+  --c-white: #ffe699;
+}
+
+/* Theme: 1-Bit Pure Monochrome Bitmap */
+body[data-theme="mono-bw"] {
+  --c-bg: #ffffff;
+  --c-text: #000000;
+  --c-border: #000000;
+  --c-box-bg: #ffffff;
+  --c-thread-head: #000000;
+  --c-blue: #000000;
+  --c-dark-green: #000000;
+  --c-gray: #000000;
+  --c-light-gray: #000000;
+  --c-white: #ffffff;
+}
+
+body {
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  font-family: "MS PGothic", "IPAMonaPGothic", "Mona", "Textar", "Saitamaar", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  letter-spacing: normal;
+}
+
+.font-aa {
+  font-family: "MS PGothic", "IPAMonaPGothic", "Mona", "Textar", "Saitamaar", "Hiragino Kaku Gothic ProN", monospace;
+  font-size: 14px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
+  letter-spacing: 0;
+}
+
+.retro-box {
+  background-color: var(--c-box-bg);
+  border: 2px solid var(--c-border);
+  box-shadow: 2px 2px 0px var(--c-border);
+}
+
+.retro-btn {
+  background-color: var(--c-box-bg);
+  border: 2px solid var(--c-border);
+  box-shadow: 2px 2px 0px var(--c-border);
+  color: var(--c-text);
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: transform 0.05s ease;
+  user-select: none;
+}
+.retro-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--c-border);
+}
+
+.retro-input {
+  background-color: var(--c-box-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  padding: 3px 6px;
+  font-family: inherit;
+  outline: none;
+}
+.retro-input:focus {
+  outline: 1px dashed var(--c-text);
+}
+
+/* Anchor Popover Preview */
+#anchor-preview {
+  position: absolute;
+  display: none;
+  z-index: 50;
+  max-width: 380px;
+  background-color: var(--c-box-bg);
+  border: 2px solid var(--c-border);
+  box-shadow: 3px 3px 0px var(--c-border);
+  padding: 8px;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* Subtle CRT scanline overlay (toggleable) */
+.scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.18) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.02),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.02)
+  );
+  background-size: 100% 3px, 4px 100%;
+}
+</style>
+</head>
+<body data-theme="pc98" class="p-2 sm:p-4 min-h-screen text-[13px] leading-snug">
+
+<div class="max-w-5xl mx-auto">
+  <!-- BBS Header Banner -->
+  <header class="retro-box p-3 mb-3">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2 mb-2" style="border-color: var(--c-border);">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-wider" style="color: var(--c-thread-head);">
+          ■ 地下１６色電子掲示板 ■
+        </h1>
+        <p class="text-xs mt-0.5" style="color: var(--c-gray);">
+          16-Color Limited Palette Text BBS &mdash; 荒らし・自演はスルー推奨 / sage進行
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span id="sync-status" class="px-2 py-0.5 border" style="border-color: var(--c-border); color: var(--c-dark-green);">
+          ● 接続中...
+        </span>
+        <span id="clock-display" class="font-mono text-xs hidden sm:inline">00:00:00</span>
+      </div>
+    </div>
+
+    <!-- Retro Palette Controls & Utilities -->
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="font-bold">配色切替:</span>
+        <button class="retro-btn text-[11px]" onclick="setBbsTheme('pc98')">PC-98 16色</button>
+        <button class="retro-btn text-[11px]" onclick="setBbsTheme('2ch-classic')">2ch標準</button>
+        <button class="retro-btn text-[11px]" onclick="setBbsTheme('mono-green')">CRT緑管</button>
+        <button class="retro-btn text-[11px]" onclick="setBbsTheme('mono-amber')">CRT琥珀</button>
+        <button class="retro-btn text-[11px]" onclick="setBbsTheme('mono-bw')">1bit白黒</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="retro-btn text-[11px] font-bold text-amber-700" onclick="triggerTestPlaySimulation()" title="ブラウザ上で投稿と住民の反応をテストプレイ">
+          🎮 テストプレイ体験
+        </button>
+        <label class="cursor-pointer select-none flex items-center gap-1">
+          <input type="checkbox" id="scanline-toggle" onchange="toggleScanlines(this.checked)" class="align-middle">
+          <span>走査線</span>
+        </label>
+        <label class="cursor-pointer select-none flex items-center gap-1">
+          <input type="checkbox" id="beep-toggle" checked class="align-middle">
+          <span>電子音</span>
+        </label>
+        <button class="retro-btn text-[11px]" onclick="openNewThreadModal()">＋ スレッド作成</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation / Thread Quick Switcher -->
+  <nav class="retro-box p-2 mb-3">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs border-b pb-1 mb-2" style="border-color: var(--c-border);">
+      <div class="flex items-center gap-2">
+        <span class="font-bold">【スレッド一覧】</span>
+        <span id="thread-count-badge" style="color: var(--c-gray);">0 件</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <input type="text" id="search-box" placeholder="スレタイ検索..." class="retro-input text-xs w-36 sm:w-52" oninput="filterThreads()">
+        <button class="retro-btn text-[11px]" onclick="refreshBoard()">再読込</button>
+      </div>
+    </div>
+    <div id="thread-index-list" class="max-h-36 overflow-y-auto pr-1 text-xs space-y-1">
+      <!-- Generated via JS -->
+      <div class="p-1" style="color: var(--c-gray);">スレッドを読み込んでいます...</div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Thread Title Bar -->
+    <div class="retro-box p-2.5 mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <span class="text-xs px-1 border mr-2" style="border-color: var(--c-border);">本スレ</span>
+        <span id="active-thread-title" class="font-bold text-base sm:text-lg" style="color: var(--c-thread-head);">
+          スレッドを選択してください
+        </span>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <a href="#post-form-anchor" class="underline" style="color: var(--c-blue);">▼書き込み欄へ</a>
+        <button class="retro-btn text-[11px]" onclick="scrollThreadToBottom()">最下部へ</button>
+      </div>
+    </div>
+
+    <!-- Thread Posts Area -->
+    <div id="posts-container" class="space-y-3 mb-4">
+      <!-- Posts are injected here dynamically -->
+      <div class="retro-box p-4 text-center text-xs" style="color: var(--c-gray);">
+        読み込み中...
+      </div>
+    </div>
+
+    <div id="post-form-anchor" class="retro-box p-3 mb-6">
+      <div class="border-b pb-1 mb-2 font-bold text-xs flex justify-between items-center" style="border-color: var(--c-border);">
+        <span>■ レスを投稿する</span>
+        <span class="text-[11px] font-normal" style="color: var(--c-gray);">E-mailに「sage」でスレ非浮上</span>
+      </div>
+
+      <!-- Quick AA (Ascii Art) Toolbar -->
+      <div class="mb-2 flex flex-wrap items-center gap-1 text-[11px]">
+        <span class="font-bold mr-1">AA挿入:</span>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('mona')">モナー</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('giko')">ギコ猫</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('dokuo')">ドクオ</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('kita')">ｷﾀ━(ﾟ∀ﾟ)━!</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('shobon')">(´・ω・`)</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('shaki')">(｀・ω・´)</button>
+        <button type="button" class="retro-btn text-[10px]" onclick="insertAA('maru')">● 16色ドット</button>
+      </div>
+
+      <form id="reply-form" onsubmit="submitReply(event)" class="space-y-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <label for="post-name" class="w-12 text-right">名前:</label>
+            <input type="text" id="post-name" value="名無しさん" class="retro-input flex-1">
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="post-mail" class="w-12 text-right">E-mail:</label>
+            <input type="text" id="post-mail" value="sage" placeholder="sage" class="retro-input flex-1">
+          </div>
+        </div>
+        <div class="flex flex-col text-xs">
+          <label for="post-body" class="mb-1 font-bold">内容 (Shift_JIS ASCIIアート対応):</label>
+          <textarea id="post-body" rows="6" required class="retro-input font-aa w-full resize-y text-[13px] leading-tight" placeholder="ここにメッセージを入力してください。>>1 でアンカーが打てます。名前欄の#に続けて暗号キーを入れるとトリップ（◆xxxx）になります。"></textarea>
+        </div>
+        <div class="flex items-center justify-between pt-1">
+          <div class="text-[11px]" style="color: var(--c-gray);">
+            ※ 二重書き込み防止タイマー作動中
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" class="retro-btn text-xs" onclick="document.getElementById('post-body').value=''">リセット</button>
+            <button type="submit" id="submit-reply-btn" class="retro-btn text-xs font-bold px-4 py-1" style="background-color: var(--c-thread-head); color: var(--c-white);">
+              書き込む
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- BBS Footer -->
+    <footer class="retro-box p-2 text-center text-[11px] mb-8" style="color: var(--c-gray);">
+      地下１６色掲示板 (Online Retro Textboard Engine) &copy; 2026<br>
+      推奨ブラウザ: 全ブラウザ対応 / フォント: MS Pゴシック推奨
+    </footer>
+  </main>
+</div>
+
+<!-- New Thread Modal -->
+<div id="new-thread-modal" class="fixed inset-0 bg-black/60 backdrop-blur-none z-50 hidden flex items-center justify-center p-3">
+  <div class="retro-box w-full max-w-lg p-3 bg-white" style="background-color: var(--c-box-bg);">
+    <div class="flex items-center justify-between border-b pb-1.5 mb-2.5" style="border-color: var(--c-border);">
+      <h2 class="font-bold text-sm" style="color: var(--c-thread-head);">【新規スレッド作成】</h2>
+      <button class="retro-btn text-xs" onclick="closeNewThreadModal()">×</button>
+    </div>
+    <form id="new-thread-form" onsubmit="submitNewThread(event)" class="space-y-2 text-xs">
+      <div>
+        <label class="block mb-1 font-bold">スレッドタイトル:</label>
+        <input type="text" id="thread-title-input" required maxlength="60" placeholder="例: 【PC-98】レトロPCの思い出を語ろう" class="retro-input w-full">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <label class="block mb-1">名前:</label>
+          <input type="text" id="thread-name-input" value="名無しさん" class="retro-input w-full">
+        </div>
+        <div>
+          <label class="block mb-1">E-mail:</label>
+          <input type="text" id="thread-mail-input" value="" placeholder="sage" class="retro-input w-full">
+        </div>
+      </div>
+      <div>
+        <label class="block mb-1 font-bold">1 の投稿本文:</label>
+        <textarea id="thread-body-input" rows="6" required class="retro-input font-aa w-full resize-y text-[13px]" placeholder="スレッドの趣旨を入力してください..."></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t" style="border-color: var(--c-border);">
+        <button type="button" class="retro-btn" onclick="closeNewThreadModal()">キャンセル</button>
+        <button type="submit" id="create-thread-btn" class="retro-btn font-bold px-3 py-1" style="background-color: var(--c-thread-head); color: var(--c-white);">スレッドを立てる</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Anchor Hover Preview Element -->
+<div id="anchor-preview" class="font-aa text-xs"></div>
+
+<!-- System Notification Toast (Custom message box avoiding alert()) -->
+<div id="bbs-toast" class="fixed bottom-4 right-4 z-50 hidden retro-box p-2 text-xs shadow-lg max-w-sm"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, collection, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+/* Sound Synthesizer via Web Audio API (No external sound files) */
+class RetroAudio {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) this.ctx = new AudioContextClass();
+    }
+  }
+  playBeep(freq = 880, duration = 0.05, type = 'square') {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {
+      // Ignore audio errors
+    }
+  }
+  playPostSound() {
+    this.playBeep(1200, 0.04, 'square');
+    setTimeout(() => this.playBeep(1800, 0.06, 'square'), 50);
+  }
+  playAnchorSound() {
+    this.playBeep(640, 0.03, 'sine');
+  }
+}
+
+const retroSound = new RetroAudio();
+window.retroSound = retroSound;
+
+const DEFAULT_SEED_THREADS = [
+  {
+    id: "thread-seed-pc98",
+    title: "【16色】レトロPCのパレット・CGA・PC-98について語るスレ",
+    createdAt: Date.now() - 3600000 * 24,
+    updatedAt: Date.now() - 3600000 * 2,
+    posts: [
+      {
+        num: 1,
+        name: "名無しさん◆VGA/98k16",
+        mail: "",
+        date: "2026/09/19(土) 00:00:01.00",
+        uid: "PC980001",
+        body: "16色の制限美を愛する人たちのためのスレッドです。\nPC-9801、PC-8801、MSX、CGA、EGAなどのパレットや\nディザリング技術、ビットマップフォント、AAについて語りましょう。\n\n　　 ∧＿∧\n　　（　´∀｀）＜ 16色でも世界は描ける！\n　　（　　　　）\n　　｜ ｜　|\n　　（_＿）＿）"
+      },
+      {
+        num: 2,
+        name: "名無しさん",
+        mail: "sage",
+        date: "2026/09/19(土) 01:15:22.34",
+        uid: "Dither98",
+        body: ">>1\n乙です。\n中間色は格子状の市松模様（市松ディザ）で表現するのが最高にクール。"
+      },
+      {
+        num: 3,
+        name: "ギコ猫",
+        mail: "sage",
+        date: "2026/09/19(土) 02:40:11.89",
+        uid: "GikoNeko",
+        body: "　　　 ＿＿＿_\n　　／ 　 　 ＼\n　 /　　 ⌒　　⌒ ＼\n　｜　 （●） （●） ｜\n　 ＼　　（__人__） ／\n　　 >― '⌒ヽー<\n\nドットの温かみがあるな。"
+      },
+      {
+        num: 4,
+        name: "名無しさん",
+        mail: "",
+        date: "2026/09/19(土) 03:05:44.12",
+        uid: "RetroFont",
+        body: ">>1\nMS PゴシックのプロポーショナルフォントでAAのズレを無くすのって職人技だったよね。"
+      },
+      {
+        num: 5,
+        name: "名無しさん",
+        mail: "sage",
+        date: "2026/09/19(土) 04:20:18.77",
+        uid: "CleanAA05",
+        body: ">>1\n文字の余分な空白や先頭のインデントバグが綺麗に修正されたぞ。\nこれでズレずにASCIIアートや長文が読めるな。"
+      }
+    ]
+  },
+  {
+    id: "thread-seed-aa",
+    title: "【AA保管庫】モナー・ギコ猫・やる夫総合",
+    createdAt: Date.now() - 3600000 * 12,
+    updatedAt: Date.now() - 3600000 * 1,
+    posts: [
+      {
+        num: 1,
+        name: "モナー◆MONA.net",
+        mail: "",
+        date: "2026/09/19(土) 03:00:00.00",
+        uid: "MonaBase",
+        body: "懐かしのASCIIアートを貼るスレです。\nフォントはMS Pゴシック推奨。\n\n　 ∧＿∧\n　（ ´∀｀） オマエモナー\n　（ つ つ\n　 )　)　)\n　（_＿）＿）"
+      },
+      {
+        num: 2,
+        name: "名無しさん",
+        mail: "sage",
+        date: "2026/09/19(土) 03:25:40.12",
+        uid: "Tester01",
+        body: "ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!\nAAツールバーからワンクリックで貼れるの便利だな。"
+      },
+      {
+        num: 3,
+        name: "やる夫",
+        mail: "sage",
+        date: "2026/09/19(土) 05:10:00.22",
+        uid: "Yaruo99",
+        body: "　　／￣￣＼\n　／　　 _ノ　　＼\n　|　　　 （ ●）（●）\n.　|　　　　 （__人__）\n　 |　　　　　｀ ⌒´ﾉ\n.　 |　　　　　　 　 }\n.　 ヽ　　　　　 　 }\n　　 ヽ　　　　　ノ\n　　　/　　　 く\nブラウザ上でもバッチリ動いてるお！"
+      }
+    ]
+  }
+];
+
+let localThreads = [...DEFAULT_SEED_THREADS];
+let activeThreadId = localThreads[0].id;
+let isCloudConnected = false;
+let currentUserId = "Anonymous";
+let db = null;
+let auth = null;
+let appId = "bbs-2ch-retro";
+
+// 2ch Tripcode generator algorithm simulator
+function generateTripcode(rawName) {
+  if (!rawName.includes('#')) {
+    return { name: rawName.trim() || '名無しさん', trip: '' };
+  }
+  const parts = rawName.split('#');
+  const name = parts[0].trim() || '名無しさん';
+  const key = parts.slice(1).join('#');
+  if (!key) return { name, trip: '' };
+
+  // Simple deterministic 8-character tripcode hash
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+  let trip = "";
+  let h = Math.abs(hash);
+  for (let j = 0; j < 8; j++) {
+    trip += chars[(h + j * 7) % chars.length];
+  }
+  return { name, trip: `◆${trip}` };
+}
+
+// Generate realistic 2ch Date & ID format
+function formatDateAndID(dateObj, uidStr, threadId) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayName = days[dateObj.getDay()];
+  const hh = String(dateObj.getHours()).padStart(2, '0');
+  const mm = String(dateObj.getMinutes()).padStart(2, '0');
+  const ss = String(dateObj.getSeconds()).padStart(2, '0');
+  const ms = String(Math.floor(dateObj.getMilliseconds() / 10)).padStart(2, '0');
+
+  // Compute daily hash ID for anonymous posting
+  const rawIdKey = `${uidStr}-${y}${m}${d}-${threadId}`;
+  let idHash = 0;
+  for (let i = 0; i < rawIdKey.length; i++) {
+    idHash = (idHash * 31 + rawIdKey.charCodeAt(i)) | 0;
+  }
+  const idAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let hashStr = "";
+  let val = Math.abs(idHash);
+  for (let k = 0; k < 8; k++) {
+    hashStr += idAlphabet[(val + k * 13) % idAlphabet.length];
+  }
+
+  return {
+    dateFormatted: `${y}/${m}/${d}(${dayName}) ${hh}:${mm}:${ss}.${ms}`,
+    displayId: hashStr
+  };
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
