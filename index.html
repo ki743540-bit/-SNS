@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DULL-NET // 16-COLOR ANONYMOUS BBS</title>
+  <style>
+    /* -------------------------------------------------------------
+       DULL 16-COLOR PALETTE & RETRO FOUNDATION
+       ------------------------------------------------------------- */
+    :root {
+      /* 16色パレット（くすんだマットトーン） */
+      --pal-0:  #101216; /* 暗黒スレート (背景深部) */
+      --pal-1:  #1a1e24; /* アイアンダーク (パネル背景) */
+      --pal-2:  #252b34; /* スレートグレー (入力欄・ボタン) */
+      --pal-3:  #38414e; /* 枠線色 (境界線) */
+      --pal-4:  #536074; /* 明枠線色 */
+      --pal-5:  #778599; /* 減衰テキスト (時間・注釈) */
+      --pal-6:  #a9b5c5; /* 標準テキスト */
+      --pal-7:  #e0e6ed; /* ハイライト白 */
+      --pal-8:  #964848; /* くすみ煉瓦赤 */
+      --pal-9:  #c26363; /* サーモンレッド */
+      --pal-10: #a17846; /* 黄土色 (オーカー) */
+      --pal-11: #c99b5b; /* くすみ黄アンバー */
+      --pal-12: #4f7356; /* 深緑 (モス) */
+      --pal-13: #75a37d; /* くすみ薄緑 */
+      --pal-14: #43698c; /* スレートブルー */
+      --pal-15: #6d96bd; /* くすみ水色 */
+
+      /* 動的テーマ変数 */
+      --c-bg: var(--pal-0);
+      --c-surface: var(--pal-1);
+      --c-surface-soft: var(--pal-2);
+      --c-border: var(--pal-3);
+      --c-border-light: var(--pal-4);
+      --c-text-dim: var(--pal-5);
+      --c-text: var(--pal-6);
+      --c-text-bright: var(--pal-7);
+      --c-accent: var(--pal-11);
+      --c-link: var(--pal-15);
+      
+      --font-mono: "Consolas", "Courier New", "Menlo", "Monaco", "MS Gothic", monospace;
+      --scanline-opacity: 0.15;
+    }
+
+    /* テーマ1: 1-BIT MONO (白黒モノクロビットマップ) */
+    body.theme-mono {
+      --c-bg: #000000;
+      --c-surface: #0a0a0a;
+      --c-surface-soft: #161616;
+      --c-border: #444444;
+      --c-border-light: #777777;
+      --c-text-dim: #888888;
+      --c-text: #dddddd;
+      --c-text-bright: #ffffff;
+      --c-accent: #ffffff;
+      --c-link: #ffffff;
+      filter: grayscale(100%) contrast(150%);
+    }
+
+    /* テーマ2: AMBER CRT (琥珀色管) */
+    body.theme-amber {
+      --c-bg: #120b02;
+      --c-surface: #1e1305;
+      --c-surface-soft: #2e1d07;
+      --c-border: #5e3b0e;
+      --c-border-light: #945d17;
+      --c-text-dim: #a67024;
+      --c-text: #ffb833;
+      --c-text-bright: #ffda73;
+      --c-accent: #ffb833;
+      --c-link: #ffa600;
+    }
+
+    /* テーマ3: PC-98 SLATE (緑灰PC調) */
+    body.theme-pc98 {
+      --c-bg: #0b1411;
+      --c-surface: #12211c;
+      --c-surface-soft: #1c3029;
+      --c-border: #2e4d41;
+      --c-border-light: #477765;
+      --c-text-dim: #629681;
+      --c-text: #a8d5be;
+      --c-text-bright: #d4f2e3;
+      --c-accent: #6cd1a4;
+      --c-link: #5ec799;
+    }
+
+    /* テーマ4: GAMEBOY (4階調オリーブ液晶) */
+    body.theme-gb {
+      --c-bg: #1b2612;
+      --c-surface: #2b3a1a;
+      --c-surface-soft: #3b4e24;
+      --c-border: #526b32;
+      --c-border-light: #709144;
+      --c-text-dim: #709144;
+      --c-text: #8fae5c;
+      --c-text-bright: #b2ce74;
+      --c-accent: #b2ce74;
+      --c-link: #9bbd65;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      image-rendering: pixelated;
+    }
+
+    body {
+      background-color: var(--c-bg);
+      color: var(--c-text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* スキャンラインと網点オーバーレイ */
+    body::before {
+      content: " ";
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 3px 100%;
+      pointer-events: none;
+      z-index: 999;
+      opacity: var(--scanline-opacity);
+    }
+
+    a {
+      color: var(--c-link);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button, input, select, textarea {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--c-text);
+      background: var(--c-surface-soft);
+      border: 1px solid var(--c-border-light);
+      padding: 4px 8px;
+      outline: none;
+    }
+    button {
+      cursor: pointer;
+      user-select: none;
+    }
+    button:hover {
+      background: var(--c-border);
+      color: var(--c-text-bright);
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+
+    /* -------------------------------------------------------------
+       HEADER & NAV
+       ------------------------------------------------------------- */
+    header {
+      background: var(--c-surface);
+      border-bottom: 2px solid var(--c-border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-icon {
+      width: 18px;
+      height: 18px;
+      background: var(--c-accent);
+      display: inline-block;
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+    }
+    .logo-text {
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--c-text-bright);
+      letter-spacing: 1px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 配色テーマ切替ボタン & モーダル */
+    .theme-picker-btn {
+      background: var(--c-surface-soft);
+      border: 1px solid var(--c-accent);
+      color: var(--c-accent);
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .theme-modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .theme-modal-backdrop.open {
+      display: flex;
+    }
+    .theme-modal {
+      background: var(--c-surface);
+      border: 2px solid var(--c-accent);
+      padding: 16px;
+      width: 320px;
+      box-shadow: 4px 4px 0px var(--c-bg);
+    }
+    .theme-modal-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--c-text-bright);
+      margin-bottom: 12px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      justify-content: space-between;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .theme-opt-btn {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border: 1px solid var(--c-border);
+    }
+    .theme-opt-btn.active {
+      border-color: var(--c-accent);
+      background: var(--c-surface-soft);
+      color: var(--c-text-bright);
+      font-weight: bold;
+    }
+    .theme-preview-chips {
+      display: flex;
+      gap: 3px;
+    }
+    .theme-preview-chip {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border: 1px solid rgba(0,0,0,0.3);
+    }
+
+    /* -------------------------------------------------------------
+       LAYOUT & SIDEBAR (CATEGORIES)
+       ------------------------------------------------------------- */
+    .app-body {
+      display: flex;
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    aside.sidebar {
+      width: 240px;
+      background: var(--c-surface);
+      border-right: 2px solid var(--c-border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--c-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .category-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+    .cat-btn {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 4px 6px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cat-btn:hover {
+      background: var(--c-surface-soft);
+      border-color: var(--c-border);
+    }
+    .cat-btn.active {
+      background: var(--c-surface-soft);
+      border-color: var(--c-accent);
+      color: var(--c-text-bright);
+      font-weight: bold;
+    }
+    .cat-badge {
+      font-size: 10px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      padding: 0 4px;
+      color: var(--c-text-dim);
+    }
+
+    /* -------------------------------------------------------------
+       MAIN FEED & ROOM BANNER
+       ------------------------------------------------------------- */
+    main.main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--c-bg);
+      min-width: 0;
+    }
+
+    .room-banner {
+      background: var(--c-surface);
+      border-bottom: 1px solid var(--c-border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .room-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--c-text-bright);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .room-desc {
+      font-size: 11px;
+      color: var(--c-text-dim);
+    }
+
+    .posts-container {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .empty-state {
+      padding: 32px;
+      text-align: center;
+      color: var(--c-text-dim);
+      border: 1px dashed var(--c-border);
+      margin: 16px;
+    }
+
+    /* -------------------------------------------------------------
+       POST CARD
+       ------------------------------------------------------------- */
+    .post-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      padding: 10px 12px;
+      position: relative;
+    }
+    .post-card.highlight {
+      border-color: var(--c-accent);
+      background: var(--c-surface-soft);
+    }
+    .post-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--c-text-dim);
+      margin-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding-bottom: 4px;
+    }
+    .post-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .post-num {
+      color: var(--c-accent);
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .post-author {
+      color: var(--c-text-bright);
+      font-weight: bold;
+    }
+    .post-id-badge {
+      font-size: 10px;
+      padding: 1px 4px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+    }
+    .post-body {
+      font-size: 13px;
+      color: var(--c-text);
+      word-break: break-word;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .res-anchor {
+      color: var(--c-link);
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .res-anchor:hover {
+      text-decoration: underline;
+    }
+
+    /* 添付スタンプ */
+    .post-stamp-wrap {
+      margin-top: 8px;
+      display: inline-block;
+      padding: 3px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+    }
+    .bitmap-grid-display {
+      display: grid;
+      grid-template-columns: repeat(8, 5px);
+      grid-template-rows: repeat(8, 5px);
+      gap: 1px;
+    }
+    .bitmap-pixel {
+      width: 5px;
+      height: 5px;
+    }
+
+    .post-footer {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .reaction-btn {
+      font-size: 11px;
+      padding: 2px 6px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      color: var(--c-text-dim);
+    }
+    .reaction-btn:hover {
+      border-color: var(--c-border-light);
+      color: var(--c-text-bright);
+    }
+
+    /* -------------------------------------------------------------
+       INPUT & FORM PANEL (STAMP + TEXT + 16 COLOR PALETTE)
+       ------------------------------------------------------------- */
+    .compose-panel {
+      background: var(--c-surface);
+      border-top: 2px solid var(--c-border);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .compose-main-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* 8x8 スタンプキャンバス エディタ */
+    .stamp-editor-box {
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 170px;
+    }
+    .stamp-editor-header {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--c-text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stamp-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 16px);
+      grid-template-rows: repeat(8, 16px);
+      gap: 1px;
+      background: var(--c-border);
+      padding: 1px;
+      cursor: crosshair;
+      user-select: none;
+      align-self: center;
+    }
+    .stamp-cell {
+      width: 16px;
+      height: 16px;
+      background: var(--pal-0);
+    }
+
+    /* 16色スタンプカラーパレット */
+    .palette-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .palette-label {
+      font-size: 10px;
+      color: var(--c-text-dim);
+    }
+    .palette-16-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 2px;
+    }
+    .pal-swatch {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #000;
+      cursor: pointer;
+      position: relative;
+    }
+    .pal-swatch.active::after {
+      content: "";
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      border: 1px solid var(--c-text-bright);
+      outline: 1px solid #000;
+    }
+    .stamp-tools-row {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .stamp-tools-row button {
+      flex: 1;
+      padding: 2px;
+      font-size: 10px;
+    }
+
+    /* メッセージ本文入力欄 */
+    .input-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 260px;
+    }
+    .input-top-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .author-input {
+      width: 130px;
+    }
+    .text-color-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--c-text-dim);
+    }
+    .text-color-swatches {
+      display: flex;
+      gap: 2px;
+    }
+    .text-color-dot {
+      width: 12px;
+      height: 12px;
+      cursor: pointer;
+      border: 1px solid #000;
+    }
+    .text-color-dot.active {
+      border: 1px solid #fff;
+    }
+
+    .msg-textarea {
+      width: 100%;
+      height: 75px;
+      resize: vertical;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      color: var(--c-text-bright);
+      padding: 6px 8px;
+    }
+    .msg-textarea:focus {
+      border-color: var(--c-accent);
+    }
+    .compose-bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quick-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .quick-tag-btn {
+      font-size: 11px;
+      padding: 2px 6px;
+    }
+    .submit-btn {
+      background: var(--c-accent);
+      color: var(--c-bg);
+      border: 1px solid var(--c-accent);
+      font-weight: bold;
+      padding: 6px 16px;
+    }
+    .submit-btn:hover {
+      filter: brightness(1.1);
+      color: #000;
+    }
+
+    @media (max-width: 768px) {
+      aside.sidebar {
+        display: none;
+      }
+      .stamp-editor-box {
+        width: 100%;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-area">
+      <span class="logo-icon"></span>
+      <span class="logo-text">DULL-NET // 16-COLOR BBS</span>
+    </div>
+    <div class="header-actions">
+      <!-- 目立つ配色テーマ変更ボタン -->
+      <button id="openThemeBtn" class="theme-picker-btn">
+        🎨 配色切替: <span id="currentThemeLabel">DULL-16</span>
+      </button>
+      <button id="clearDataBtn" title="ログの初期化">全消去</button>
+    </div>
+  </header>
+
+  <!-- THEME SELECTION MODAL -->
+  <div id="themeModalBackdrop" class="theme-modal-backdrop">
+    <div class="theme-modal">
+      <div class="theme-modal-title">
+        <span>[ 配色パレットの選択 ]</span>
+        <button id="closeThemeBtn" style="padding:0 6px;">✕</button>
+      </div>
+      <div class="theme-grid">
+        <button class="theme-opt-btn" data-theme="dull16">
+          <span>1. DULL-16 (標準マット)</span>
+          <div class="theme-preview-chips">
+            <span class="theme-preview-chip" style="background:#1a1e24;"></span>
+            <span class="theme-preview-chip" style="background:#778599;"></span>
+            <span class="theme-preview-chip" style="background:#c99b5b;"></span>
+            <span class="theme-preview-chip" style="background:#75a37d;"></span>
+          </div>
+        </button>
+        <button class="theme-opt-btn" data-theme="mono">
+          <span>2. 1-BIT MONO (白黒2値)</span>
+          <div class="theme-preview-chips">
+            <span class="theme-preview-chip" style="background:#000;"></span>
+            <span class="theme-preview-chip" style="background:#555;"></span>
+            <span class="theme-preview-chip" style="background:#aaa;"></span>
+            <span class="theme-preview-chip" style="background:#fff;"></span>
+          </div>
+        </button>
+        <button class="theme-opt-btn" data-theme="amber">
+          <span>3. AMBER CRT (琥珀色)</span>
+          <div class="theme-preview-chips">
+            <span class="theme-preview-chip" style="background:#120b02;"></span>
+            <span class="theme-preview-chip" style="background:#5e3b0e;"></span>
+            <span class="theme-preview-chip" style="background:#ffb833;"></span>
+            <span class="theme-preview-chip" style="background:#ffda73;"></span>
+          </div>
+        </button>
+        <button class="theme-opt-btn" data-theme="pc98">
+          <span>4. PC-98 (緑灰スレート)</span>
+          <div class="theme-preview-chips">
+            <span class="theme-preview-chip" style="background:#0b1411;"></span>
+            <span class="theme-preview-chip" style="background:#2e4d41;"></span>
+            <span class="theme-preview-chip" style="background:#6cd1a4;"></span>
+            <span class="theme-preview-chip" style="background:#a8d5be;"></span>
+          </div>
+        </button>
+        <button class="theme-opt-btn" data-theme="gb">
+          <span>5. GAMEBOY (4階調オリーブ)</span>
+          <div class="theme-preview-chips">
+            <span class="theme-preview-chip" style="background:#1b2612;"></span>
+            <span class="theme-preview-chip" style="background:#3b4e24;"></span>
+            <span class="theme-preview-chip" style="background:#709144;"></span>
+            <span class="theme-preview-chip" style="background:#b2ce74;"></span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP BODY -->
+  <div class="app-body">
+    <!-- SIDEBAR: ROOM LIST -->
+    <aside class="sidebar">
+      <div class="sidebar-section-title">会議室 (カテゴリ)</div>
+      <ul class="category-list" id="categoryList">
+        <!-- JSでレンダリング -->
+      </ul>
+    </aside>
+
+    <!-- MAIN FEED -->
+    <main class="main-content">
+      <div class="room-banner">
+        <div>
+          <div class="room-title" id="roomTitle">💬 雑談板</div>
+          <div class="room-desc" id="roomDesc">気兼ねなく世間話ができる基本の広場</div>
+        </div>
+        <div style="font-size:11px; color:var(--c-text-dim);">
+          投稿数: <span id="postCountBadge">0</span>
+        </div>
